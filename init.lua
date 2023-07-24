@@ -134,7 +134,10 @@ require('lazy').setup({
     'navarasu/onedark.nvim',
     priority = 1000,
     config = function()
-      vim.cmd.colorscheme 'onedark'
+      require('onedark').setup {
+        transparent = true,
+      }
+      require('onedark').load()
     end,
   },
 
@@ -210,6 +213,15 @@ require('lazy').setup({
 -- See `:help vim.o`
 -- NOTE: You can change these options as you wish!
 
+-- Set tab width
+vim.o.tabstop = 4
+
+-- Set relative highlight
+vim.wo.relativenumber = true
+
+-- Set Min number of lines under cursor
+vim.wo.scrolloff = 12
+
 -- Set highlight on search
 vim.o.hlsearch = false
 
@@ -270,12 +282,27 @@ vim.api.nvim_create_autocmd('TextYankPost', {
 
 -- [[ Configure Telescope ]]
 -- See `:help telescope` and `:help telescope.setup()`
+local actions = require 'telescope.actions'
+local action_state = require 'telescope.actions.state'
+
+local function ms_open(pb)
+  local picker = action_state.get_current_picker(pb)
+  local multi = picker:get_multi_selection()
+  actions.select_default(pb) -- the normal enter behaviour
+  for _, j in pairs(multi) do
+    if j.path ~= nil then -- is it a file -> open it as well:
+      vim.cmd(string.format('%s %s', 'edit', j.path))
+    end
+  end
+end
+
 require('telescope').setup {
   defaults = {
     mappings = {
       i = {
         ['<C-u>'] = false,
         ['<C-d>'] = false,
+        ['<CR>'] = ms_open,
       },
     },
   },
@@ -306,10 +333,10 @@ vim.keymap.set('n', '<leader>sd', require('telescope.builtin').diagnostics, { de
 -- See `:help nvim-treesitter`
 require('nvim-treesitter.configs').setup {
   -- Add languages to be installed here that you want installed for treesitter
-  ensure_installed = { 'c', 'cpp', 'go', 'lua', 'python', 'rust', 'tsx', 'typescript', 'vimdoc', 'vim' },
+  ensure_installed = { 'c', 'cpp', 'go', 'lua', 'python', 'rust', 'typescript', 'svelte', 'vimdoc', 'vim', 'markdown', 'markdown_inline' },
 
   -- Autoinstall languages that are not installed. Defaults to false (but you can change for yourself!)
-  auto_install = false,
+  auto_install = true,
 
   highlight = { enable = true },
   indent = { enable = true },
@@ -484,7 +511,6 @@ cmp.setup {
     ['<C-Space>'] = cmp.mapping.complete {},
     ['<CR>'] = cmp.mapping.confirm {
       behavior = cmp.ConfirmBehavior.Replace,
-      select = true,
     },
     ['<Tab>'] = cmp.mapping(function(fallback)
       if cmp.visible() then
